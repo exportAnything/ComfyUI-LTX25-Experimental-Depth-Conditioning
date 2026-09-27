@@ -1,8 +1,8 @@
 {
   "id": "21a19bae-0130-42bf-b535-5a188ab18e48",
   "revision": 0,
-  "last_node_id": 181,
-  "last_link_id": 475,
+  "last_node_id": 183,
+  "last_link_id": 478,
   "nodes": [
     {
       "id": 1,
@@ -152,7 +152,8 @@
             383,
             384,
             440,
-            457
+            457,
+            478
           ]
         }
       ],
@@ -1893,7 +1894,8 @@
           "slot_index": 0,
           "links": [
             353,
-            439
+            439,
+            477
           ]
         }
       ],
@@ -2938,7 +2940,8 @@
           "type": "IMAGE",
           "slot_index": 0,
           "links": [
-            452
+            452,
+            476
           ]
         }
       ],
@@ -3271,7 +3274,7 @@
           "links": []
         }
       ],
-      "title": "FINAL — HDR tonemapped preview + original audio",
+      "title": "SDR PREVIEW - tonemapped HDR + optional effects + original audio",
       "properties": {
         "cnr_id": "comfyui-videohelpersuite",
         "ver": "1.7.9",
@@ -4109,7 +4112,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## LTX 2x Spatial Upscale\n\nShared FPS is used by both output savers, and both receive the original depth-pass audio."
+        "## LTX 2x Spatial Upscale\n\nAll final output savers share the FPS setting and original depth-pass audio."
       ],
       "color": "#432",
       "bgcolor": "#653"
@@ -4135,7 +4138,7 @@
         "Node name for S&R": "MarkdownNote"
       },
       "widgets_values": [
-        "## HDR Pass\n\nEnable HDR and its final output when ready. HDR now guides from the finished upscaled frames and creates a fresh target at their actual dimensions. Its MP4 output is the tonemapped display preview."
+        "## HDR Pass\n\nEnable HDR and the HDR10 output to save true 10-bit PQ/BT.2020 video. The separate SDR output remains available for ordinary displays. Install the bundled VHS video format first; see the HDR10 output group below."
       ],
       "color": "#432",
       "bgcolor": "#653"
@@ -4225,6 +4228,107 @@
         "Node name for S&R": "GetImageSizeAndCount"
       },
       "widgets_values": []
+    },
+    {
+      "id": 182,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        8410,
+        170
+      ],
+      "size": [
+        1220,
+        800
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 85,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 476
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 477
+        },
+        {
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "frame_rate",
+          "type": "FLOAT",
+          "widget": {
+            "name": "frame_rate"
+          },
+          "link": 478
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": []
+        }
+      ],
+      "title": "FINAL HDR10 - 10-bit PQ / BT.2020 + original audio",
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "ver": "1.7.9",
+        "Node name for S&R": "VHS_VideoCombine"
+      },
+      "widgets_values": {
+        "frame_rate": 30,
+        "loop_count": 0,
+        "filename_prefix": "selfdepth/LTX25/HDR10/03_HDR10_1000nit",
+        "format": "video/ltx-logc3-hdr10-1000nit-hevc-mp4",
+        "reference_white_nits": 203,
+        "hdr_exposure": 0,
+        "crf": 18,
+        "save_metadata": true,
+        "pingpong": false,
+        "save_output": true
+      }
+    },
+    {
+      "id": 183,
+      "type": "MarkdownNote",
+      "pos": [
+        9740,
+        170
+      ],
+      "size": [
+        1000,
+        380
+      ],
+      "flags": {},
+      "order": 86,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "HDR10 output - install the bundled VHS format",
+      "properties": {
+        "Node name for S&R": "MarkdownNote"
+      },
+      "widgets_values": [
+        "## True HDR10 delivery\n\nInstall video_formats/ltx-logc3-hdr10-1000nit-hevc-mp4.json from this repository into ComfyUI/custom_nodes/comfyui-videohelpersuite/video_formats/, then refresh/restart ComfyUI.\n\nEnable the HDR generation nodes and this HDR10 saver together. Input comes directly from the LogC3 HDR decoder, before SDR tonemapping. Output: HEVC Main10, PQ/BT.2020, 1000-nit target, original audio.\n\nReference white: 203 nits. HDR exposure: 0 stops. CRF: 18. Values above 1000 nits are clipped.\n\nHDRPreview exposure/saturation and optional film grain/DLSS/RTX only affect the separate SDR preview. View the HDR10 file in an HDR-capable player/display. See docs/HDR10.md for setup and validation."
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
     }
   ],
   "links": [
@@ -5363,6 +5467,30 @@
       181,
       0,
       "IMAGE"
+    ],
+    [
+      476,
+      126,
+      0,
+      182,
+      0,
+      "IMAGE"
+    ],
+    [
+      477,
+      43,
+      0,
+      182,
+      1,
+      "AUDIO"
+    ],
+    [
+      478,
+      6,
+      0,
+      182,
+      4,
+      "FLOAT"
     ]
   ],
   "groups": [
@@ -5517,7 +5645,7 @@
         8347.914679713427,
         -2006.933816113895,
         3467.9063469753405,
-        2043.4356058326944
+        3110
       ],
       "color": "#a67d3f",
       "flags": {}
@@ -5536,7 +5664,7 @@
     },
     {
       "id": 17,
-      "title": "14  FINAL HDR DISPLAY OUTPUT",
+      "title": "14 SDR PREVIEW OUTPUT - TONEMAPPED HDR",
       "bounding": [
         9737.922488883558,
         -2000.750784931996,
@@ -5556,6 +5684,19 @@
         1006.8605750812771
       ],
       "color": "#b58b2a",
+      "flags": {}
+    },
+    {
+      "id": 21,
+      "title": "15 HDR10 OUTPUT - RAW LOGC3 TO 10-BIT PQ / BT.2020",
+      "bounding": [
+        8350,
+        80,
+        3450,
+        1010
+      ],
+      "color": "#735a39",
+      "font_size": 24,
       "flags": {}
     }
   ],

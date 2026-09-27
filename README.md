@@ -2,14 +2,16 @@
 
 [![LTX 2.5 depth conditioning, spatial upscale, and HDR workflow overview](assets/workflow-overview.png)](assets/workflow-overview.png)
 
-A ComfyUI image-to-video workflow that generates its own temporal depth guide, uses it to condition LTX 2.5 distilled, refines a learned LTX 2x spatial upscale, and applies an HDR conversion pass. Optional film grain, DLSS temporal rendering, and RTX Video Super Resolution finish the tonemapped video.
+The overview image predates the added HDR10 export branch. The JSON includes that branch below the HDR stage.
+
+A ComfyUI image-to-video workflow that generates its own temporal depth guide, uses it to condition LTX 2.5 distilled, refines a learned LTX 2x spatial upscale, and applies an HDR conversion pass. It saves **10-bit HDR10 HEVC video (PQ/BT.2020)** plus a separate SDR-tonemapped preview. Optional film grain, DLSS temporal rendering, and RTX Video Super Resolution finish the SDR preview.
 
 **Experimental, maintainer-tested workflow.** The maintainer reports repeatable successful image-to-video runs with this final graph. It combines LTX 2.5 with LTX 2.3 Union Control and HDR IC-LoRAs; this exact combination is a community workflow, not an officially validated Lightricks recipe. See the [model sources and compatibility notes](docs/MODELS.md).
 
 ## Download and setup
 
 1. Download [the workflow JSON](workflows/LTX_2.5_Distilled_Experimental_Depth_Conditioning.json) and open or drag it into ComfyUI.
-2. Install the [custom-node dependencies](docs/DEPENDENCIES.md). The audited setup uses ComfyUI **0.33.1** and frontend **1.48.7**. Newer versions may work but were not part of this publication audit.
+2. Install the [custom-node dependencies](docs/DEPENDENCIES.md) and the [bundled HDR10 VideoHelperSuite format](docs/HDR10.md#installation). The audited setup uses ComfyUI **0.33.1** and frontend **1.48.7**. Newer versions may work but were not part of this publication audit.
 3. Download the [eight model files](docs/MODELS.md), place them in the listed folders, and select them in their loaders. Some Hugging Face downloads require sign-in and acceptance of the model's access conditions.
 4. Upload your own image in **ORIGINAL REFERENCE — upload your image** (node 2). The saved reference filename is a placeholder from the author's machine; the image is not bundled. Edit the shared motion prompt.
 5. Run the draft/depth stage, then enable the LTX upscale and HDR stages as described below. Keep the upstream generation nodes enabled so ComfyUI can reuse cached results between stages.
@@ -27,16 +29,20 @@ flowchart LR
     D --> E[LTX learned 2x spatial upscale]
     E --> F[Two-step Euler refinement]
     F --> G[HDR IC-LoRA conversion]
+    G --> M[Inverse LogC3 and PQ/BT.2020 conversion]
+    M --> N[10-bit HDR10 HEVC with original audio]
     G --> H[LogC3 to SDR tonemap]
     H --> I[Optional film grain]
     I --> J[Optional DLSS temporal rendering]
     J --> K[Optional RTX VSR]
-    K --> L[MP4 with depth-pass audio]
+    K --> L[SDR preview MP4 with original audio]
 ```
 
 The LTX upscale consumes the clean depth-pass video latent directly. It uses the base distilled model, an anchor from the first completed depth frame, and a conservative two-step refinement before tiled decoding. HDR then uses the entire refined clip as its guide with a fresh target latent.
 
 **HDR is the last diffusion pass.** In this final graph, optional film grain, DLSS, and RTX VSR run **after HDR tonemapping**. The learned LTX 2x upscale is a separate earlier stage; RTX VSR is an optional additional pixel upscale.
+
+The HDR10 branch reads the raw HDR decoder output before tonemapping or SDR effects. Changing `HDRPreviewKJ` exposure/saturation or enabling those optional effects does not alter the HDR10 file. Adjust `hdr_exposure` on the HDR10 saver for its exposure. [HDR10 output details](docs/HDR10.md).
 
 ## Saved stage controls
 
@@ -46,7 +52,8 @@ The file deliberately opens with draft/depth generation active and later stages 
 |---|---|---|
 | Input, draft, temporal depth, depth-conditioned generation | Enabled | Supply an image and prompt, then queue. |
 | `11 LTX 2x — NATIVE LATENT + EULER REFINEMENT` | Bypassed | Enable the group's nodes and queue to inspect the refined upscale. |
-| `13 HDR LAST — CONDITIONED ON FINISHED UPSCALE` and `14 FINAL HDR DISPLAY OUTPUT` | Bypassed | Enable the HDR processing and output nodes to generate and save the final tonemapped video. |
+| `13 HDR LAST — CONDITIONED ON FINISHED UPSCALE` and `15 HDR10 OUTPUT - RAW LOGC3 TO 10-BIT PQ / BT.2020` | Bypassed | Enable the HDR processing and HDR10 saver together to generate true HDR10. Install the bundled format first. |
+| `14 SDR PREVIEW OUTPUT - TONEMAPPED HDR` | Bypassed | Enable the tonemapping and preview output nodes for the separate SDR display video. |
 | Film grain, DLSS, RTX VSR | Bypassed | Enable individually when desired. Their actual order is film grain → DLSS → RTX. |
 | Memory helpers | Bypassed | Optional; preserve the default unless needed for your setup. |
 
@@ -69,21 +76,25 @@ To run the complete generation/upscale/HDR chain in one queue submission, enable
 | HDR preview | LogC3 input, exposure -0.29, saturation 0.86 |
 | Optional DLSS | Natural, intensity 0.95, temporal sequence, motion guidance enabled |
 | Optional RTX VSR | Additional 1.25x upscale, MEDIUM quality |
-| Upscale/final video encoding | NVENC AV1 MP4, yuv420p, 40 Mbps, original depth-pass audio |
+| Upscale/SDR preview encoding | NVENC AV1 MP4, yuv420p, 40 Mbps, original depth-pass audio |
+| HDR10 video encoding | HEVC Main10 MP4, yuv420p10le, PQ/BT.2020, CRF 18, original depth-pass audio |
+| HDR10 luminance target | Reference white 203 nits, ceiling 1000 nits, HDR exposure 0 stops |
 
 The depth-conditioned pass uses the saved 10-step beta schedule; the 8-step schedule belongs to the draft and HDR passes. Sampling and bypass settings have not been changed for this release.
 
 ## Outputs and limitations
 
 - The pre-HDR upscale saves under `output/selfdepth/LTX25/repaired_before_HDR/01_LTX2x*`.
-- The final display video saves under `output/selfdepth/LTX25/repaired_before_HDR/02_HDR_preview*`.
-- The HDR model produces LogC3 content that `HDRPreviewKJ` tonemaps for ordinary display. The final MP4 is an **SDR-tonemapped output**, not a PQ/BT.2020 HDR10 master. The earlier custom HDR10 export preset is not used or required here.
+- The SDR display preview saves under `output/selfdepth/LTX25/repaired_before_HDR/02_HDR_preview*`.
+- The true HDR10 file saves under `output/selfdepth/LTX25/HDR10/03_HDR10_1000nit*`.
+- HDR10 uses the bundled format to convert raw LogC3 through linear Rec.709 into PQ/BT.2020. It preserves highlights above reference white and encodes at 10 bits. The separate `HDRPreviewKJ` branch produces SDR for ordinary displays.
+- This is a 1000-nit output target with hard per-channel highlight clipping. Mastering metadata describes that target; content-light measurements are left unspecified. It is not a substitute for a professional HDR grade.
 - Learned refinement and HDR are generative and can change detail, motion, or appearance. The source file retains the conservative refinement settings used by the maintainer.
 - Higher resolution, longer clips, and the HDR pass increase memory requirements. The reference machine uses an NVIDIA RTX PRO 4500 Blackwell with 32 GB VRAM; this is a reference configuration, not a measured minimum requirement.
-- The saved AV1 encoder requires compatible NVIDIA hardware and FFmpeg support. If unavailable, select an encoder supported by your VideoHelperSuite installation.
+- The SDR AV1 encoder requires compatible NVIDIA hardware and FFmpeg support. HDR10 uses CPU `libx265` and requires FFmpeg's `zscale` filter; it does not require NVENC. See [HDR10 installation and verification](docs/HDR10.md).
 
 ## Publication notes
 
-This repository contains the workflow and documentation. Download model weights from their original sources; model weights, input images, generated videos, and third-party runtime binaries are not bundled.
+This repository contains the workflow, HDR10 encoder preset, and documentation. Download model weights from their original sources; model weights, input images, generated videos, and third-party runtime binaries are not bundled.
 
-The publication copy preserves all 85 nodes, 142 links, computational settings, and bypass states. Cleanup only removed cached previews and obsolete audit metadata, corrected the DLSS repository annotation, and corrected the RTX node's display title to say “after HDR.” See [the dependency and publication audit](docs/PUBLICATION_NOTES.md).
+The original generation settings and bypass states are preserved. The HDR10 update adds one saver, one instruction note, and three connections from the existing HDR decoder, audio, and FPS outputs. The current workflow has 87 nodes and 145 links. See [the dependency and publication audit](docs/PUBLICATION_NOTES.md).

@@ -1,0 +1,84 @@
+{
+  "input_color_depth": "16bit",
+  "fake_trc": "linear",
+  "extra_widgets": [
+    [
+      "reference_white_nits",
+      "FLOAT",
+      {
+        "default": 203,
+        "min": 1,
+        "max": 1000,
+        "step": 1
+      }
+    ],
+    [
+      "hdr_exposure",
+      "FLOAT",
+      {
+        "default": 0,
+        "min": -10,
+        "max": 10,
+        "step": 0.1
+      }
+    ]
+  ],
+  "main_pass": [
+    "-n",
+    "-vf",
+    [
+      [
+        "format=gbrpf32le,geq=r='min(1000/${reference_white_nits},max(0,if(gte(r(X,Y),0.149657834105),(pow(10,(r(X,Y)-0.385537)/0.247190)-0.052272)/5.555556,(r(X,Y)-0.092809)/5.367655))*pow(2,${hdr_exposure}))':g='min(1000/${reference_white_nits},max(0,if(gte(g(X,Y),0.149657834105),(pow(10,(g(X,Y)-0.385537)/0.247190)-0.052272)/5.555556,(g(X,Y)-0.092809)/5.367655))*pow(2,${hdr_exposure}))':b='min(1000/${reference_white_nits},max(0,if(gte(b(X,Y),0.149657834105),(pow(10,(b(X,Y)-0.385537)/0.247190)-0.052272)/5.555556,(b(X,Y)-0.092809)/5.367655))*pow(2,${hdr_exposure}))',zscale=primariesin=bt709:transferin=linear:matrixin=gbr:rangein=full:primaries=bt2020:transfer=smpte2084:matrix=bt2020nc:range=limited:npl=${reference_white_nits}:dither=error_diffusion,format=yuv420p10le"
+      ]
+    ],
+    "-c:v",
+    "libx265",
+    "-preset",
+    "medium",
+    "-pix_fmt",
+    "yuv420p10le",
+    "-profile:v",
+    "main10",
+    "-tag:v",
+    "hvc1",
+    "-crf",
+    [
+      "crf",
+      "INT",
+      {
+        "default": 18,
+        "min": 0,
+        "max": 40,
+        "step": 1
+      }
+    ],
+    "-x265-params",
+    "hdr10=1:hdr10-opt=1:colorprim=9:transfer=16:colormatrix=9:range=limited:master-display=G(8500,39850)B(6550,2300)R(35400,14600)WP(15635,16450)L(10000000,1):max-cll=0,0:log-level=error",
+    "-color_range",
+    "tv",
+    "-colorspace",
+    "bt2020nc",
+    "-color_primaries",
+    "bt2020",
+    "-color_trc",
+    "smpte2084",
+    "-movflags",
+    "+faststart"
+  ],
+  "audio_pass": [
+    "-c:a",
+    "aac",
+    "-b:a",
+    "320k",
+    "-movflags",
+    "+faststart"
+  ],
+  "save_metadata": [
+    "save_metadata",
+    "BOOLEAN",
+    {
+      "default": true
+    }
+  ],
+  "extension": "mp4"
+}

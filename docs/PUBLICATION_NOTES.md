@@ -8,7 +8,7 @@ Source SHA-256: `2cab26853ebde7bcebdfc7c3d62ff4ef3af379ed720d907a1d2334849fccae0
 
 ## Preserved behavior
 
-The publication copy preserves all 85 nodes, 142 links, input/output connections, computational widget values, model selections, seeds, and enabled/bypassed states. The original source file was not modified.
+The initial publication preserved all 85 nodes and 142 links. The HDR10 update adds a saver and instruction note, plus three output connections, bringing the workflow to 87 nodes and 145 links. Existing sampler settings, model selections, seeds, input connections, and enabled/bypassed states are unchanged. The original source file was not modified.
 
 The final graph's optional finishing order is film grain → DLSS → RTX VSR, after HDR tonemapping. This supersedes earlier versions that placed RTX/DLSS before HDR.
 
@@ -30,7 +30,7 @@ The DLSS temporal-motion implementation is already published at `81171d18bc2a359
 
 Those optional implementations are not byte-for-byte identical to the author's current installation. Their local session changes are not vendored or committed here. Published versions provide the node interfaces used by this graph; an independent clean-install render has not been performed as part of publication.
 
-The older local HDR10 export preset is unused. The final HDR path saves an SDR-tonemapped AV1 display video, not an HDR10 master.
+The previously unused local HDR10 preset is now included in `video_formats/` and connected to the raw LogC3 decoder output in parallel with the SDR preview. Install it as described in [HDR10.md](HDR10.md). It uses VideoHelperSuite's 16-bit RGB input pipe, inverse LogC3, linear Rec.709 to PQ/BT.2020 conversion, and HEVC Main10 encoding. SDR finishing remains on its original branch.
 
 ## Validation scope
 
@@ -40,4 +40,6 @@ The older local HDR10 export preset is unused. The final HDR path saves an SDR-t
 - Verified custom-node repository links and the published DLSS fork commit.
 - Preserved the maintainer's working generation settings; no new render was launched for this documentation/publication task.
 
-Model weights and third-party software remain subject to their original source licenses and access conditions. This repository distributes workflow/documentation files only.
+The HDR10 update is validated separately with synthetic LogC3 inputs, encoded-pixel checks, container/bitstream metadata inspection, and audio muxing. See [HDR10 verification](HDR10.md#verification). This checks the delivery path, not a new full diffusion render or a subjective HDR display grade.
+
+Model weights and third-party software remain subject to their original source licenses and access conditions. This repository distributes the workflow, encoder preset, and documentation.

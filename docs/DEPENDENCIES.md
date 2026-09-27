@@ -11,7 +11,7 @@ Install the packages below using your ComfyUI node manager or each project's own
 | [ComfyUI-LTXVideo](https://github.com/Lightricks/ComfyUI-LTXVideo) | [`ac4d998`](https://github.com/Lightricks/ComfyUI-LTXVideo/commit/ac4d99839020b983e956a8ab67ec38aec1b6e65a) | `LTXICLoRALoaderModelOnly`, `LTXAddVideoICLoRAGuide` |
 | [ComfyUI-Video-Depth-Anything](https://github.com/yuvraj108c/ComfyUI-Video-Depth-Anything) | [`a0db08e`](https://github.com/yuvraj108c/ComfyUI-Video-Depth-Anything/commit/a0db08e63d1ea571601c45cde4aaee0acdd0544d) | `LoadVideoDepthAnythingModel`, `VideoDepthAnythingProcess`, `VideoDepthAnythingOutput` |
 | [ComfyUI-KJNodes](https://github.com/kijai/ComfyUI-KJNodes) | 1.4.8 | `HDRPreviewKJ`, `GetImageSizeAndCount` |
-| [ComfyUI-VideoHelperSuite](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite) | 1.7.9 | `VHS_VideoCombine`; stock `video/nvenc_av1-mp4` format |
+| [ComfyUI-VideoHelperSuite](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite) | 1.7.9 | `VHS_VideoCombine`; stock AV1 preview format and the bundled HDR10 format |
 | [comfy-mtb](https://github.com/melMass/comfy_mtb) | 0.5.4 | `Image Resize Factor (mtb)` |
 
 ## Optional finishing and memory helpers
@@ -36,10 +36,12 @@ The already-published commit supports the workflow's `temporal sequence`, `motio
 
 ### Encoding and RTX
 
-The output nodes select VideoHelperSuite's stock NVENC AV1 MP4 format. Use an FFmpeg build and NVIDIA device that support that encoder, or select a supported format in the output nodes. See [VideoHelperSuite's installation documentation](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite#readme).
+The SDR output nodes select VideoHelperSuite's stock NVENC AV1 MP4 format. Use an FFmpeg build and NVIDIA device that support that encoder, or select a supported SDR format. See [VideoHelperSuite's installation documentation](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite#readme).
+
+**HDR10 additionally requires the bundled format file.** Copy [ltx-logc3-hdr10-1000nit-hevc-mp4.json](../video_formats/ltx-logc3-hdr10-1000nit-hevc-mp4.json) into `ComfyUI/custom_nodes/comfyui-videohelpersuite/video_formats/` and refresh/restart ComfyUI. FFmpeg must support `libx265` and `zscale`. The workflow JSON alone does not install this preset. See [HDR10 setup](HDR10.md).
 
 Optional RTX VSR uses the NVIDIA VFX dependency described by [NVIDIA RTX Nodes](https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI). It is separate from the learned LTX latent 2x stage.
 
 ## Not required
 
-The former local `ComfyUI-LTX-Compat` guider nodes and custom `ltx-logc3-hdr10-1000nit-hevc-mp4.json` export preset are not referenced by this workflow. Neither needs installation. Model weights are listed separately in [MODELS.md](MODELS.md).
+The former local `ComfyUI-LTX-Compat` guider nodes are not referenced and do not need installation. The HDR10 export preset, previously unused, is now a bundled dependency. Model weights are listed separately in [MODELS.md](MODELS.md).
