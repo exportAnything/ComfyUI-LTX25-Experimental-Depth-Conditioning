@@ -1,0 +1,13 @@
+*.safetensors
+*.pth
+*.pt
+*.ckpt
+*.dll
+*.mp4
+*.mkv
+__pycache__/
+input/
+output/
+temp/
+.env
+.env.*
