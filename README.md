@@ -1,5 +1,7 @@
 # Experimental Depth Conditioning for LTX 2.5 Distilled
 
+[![LTX 2.5 depth conditioning, spatial upscale, and HDR workflow overview](assets/workflow-overview.png)](assets/workflow-overview.png)
+
 A ComfyUI image-to-video workflow that generates its own temporal depth guide, uses it to condition LTX 2.5 distilled, refines a learned LTX 2x spatial upscale, and applies an HDR conversion pass. Optional film grain, DLSS temporal rendering, and RTX Video Super Resolution finish the tonemapped video.
 
 **Experimental, maintainer-tested workflow.** The maintainer reports repeatable successful image-to-video runs with this final graph. It combines LTX 2.5 with LTX 2.3 Union Control and HDR IC-LoRAs; this exact combination is a community workflow, not an officially validated Lightricks recipe. See the [model sources and compatibility notes](docs/MODELS.md).
