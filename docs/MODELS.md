@@ -30,4 +30,4 @@ Consult each model page for its access conditions, license, and usage documentat
 
 This is an experimental LTX-2.5 distilled workflow using LTX-2.3 Union Control and HDR adapters. The [LTX-2.5 model card](https://huggingface.co/Lightricks/LTX-2.5) describes broad compatibility with 2.3 LoRAs/IC-LoRAs with exceptions; the adapter model cards still identify LTX-2.3 as their base. This exact workflow is maintainer-tested, rather than an officially validated LTX-2.5 HDR recipe.
 
-No separate distilled LoRA, HDR scene-embedding file, temporal upscaler, or additional pixel-upscaler model file is selected by this JSON. Optional DLSS and RTX finishing have their own software/runtime requirements described in [DEPENDENCIES.md](DEPENDENCIES.md).
+No separate distilled LoRA, HDR scene-embedding file, temporal upscaler, or additional pixel-upscaler model file is selected by this JSON. DLSS finishing and RTX output upscaling have their own software/runtime requirements described in [DEPENDENCIES.md](DEPENDENCIES.md).

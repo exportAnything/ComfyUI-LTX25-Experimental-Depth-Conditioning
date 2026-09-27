@@ -2,9 +2,9 @@
 
 [![LTX 2.5 depth conditioning, spatial upscale, and HDR workflow overview](assets/workflow-overview.png)](assets/workflow-overview.png)
 
-The overview image predates the added HDR10 export branch. The JSON includes that branch below the HDR stage.
+The overview shows an earlier layout. The current JSON includes a dedicated RTX upscale and HDR10 export branch.
 
-A ComfyUI image-to-video workflow that generates its own temporal depth guide, uses it to condition LTX 2.5 distilled, refines a learned LTX 2x spatial upscale, and applies an HDR conversion pass. It saves **10-bit HDR10 HEVC video (PQ/BT.2020)** plus a separate SDR-tonemapped preview. Optional film grain, DLSS temporal rendering, and RTX Video Super Resolution finish the SDR preview.
+A ComfyUI image-to-video workflow that generates its own temporal depth guide, uses it to condition LTX 2.5 distilled, refines a learned LTX 2x spatial upscale, and applies an HDR conversion pass. It saves **10-bit HDR10 HEVC video (PQ/BT.2020)** plus a separate SDR-tonemapped preview. Each output branch has its own RTX Video Super Resolution node targeting **3840x2192**. Optional film grain and DLSS temporal rendering finish the SDR preview.
 
 **Experimental, maintainer-tested workflow.** The maintainer reports repeatable successful image-to-video runs with this final graph. It combines LTX 2.5 with LTX 2.3 Union Control and HDR IC-LoRAs; this exact combination is a community workflow, not an officially validated Lightricks recipe. See the [model sources and compatibility notes](docs/MODELS.md).
 
@@ -29,20 +29,21 @@ flowchart LR
     D --> E[LTX learned 2x spatial upscale]
     E --> F[Two-step Euler refinement]
     F --> G[HDR IC-LoRA conversion]
-    G --> M[Inverse LogC3 and PQ/BT.2020 conversion]
+    G --> O[RTX VSR to 3840x2192]
+    O --> M[Inverse LogC3 and PQ/BT.2020 conversion]
     M --> N[10-bit HDR10 HEVC with original audio]
     G --> H[LogC3 to SDR tonemap]
     H --> I[Optional film grain]
-    I --> J[Optional DLSS temporal rendering]
-    J --> K[Optional RTX VSR]
+    I --> J[RTX VSR to 3840x2192]
+    J --> K[Optional DLSS temporal rendering]
     K --> L[SDR preview MP4 with original audio]
 ```
 
 The LTX upscale consumes the clean depth-pass video latent directly. It uses the base distilled model, an anchor from the first completed depth frame, and a conservative two-step refinement before tiled decoding. HDR then uses the entire refined clip as its guide with a fresh target latent.
 
-**HDR is the last diffusion pass.** In this final graph, optional film grain, DLSS, and RTX VSR run **after HDR tonemapping**. The learned LTX 2x upscale is a separate earlier stage; RTX VSR is an optional additional pixel upscale.
+**HDR is the last diffusion pass.** The HDR10 branch then upscales raw LogC3 frames with its own RTX VSR node before PQ conversion. The SDR branch runs film grain → RTX VSR → DLSS after HDR tonemapping. The learned LTX 2x upscale is a separate earlier stage.
 
-The HDR10 branch reads the raw HDR decoder output before tonemapping or SDR effects. Changing `HDRPreviewKJ` exposure/saturation or enabling those optional effects does not alter the HDR10 file. Adjust `hdr_exposure` on the HDR10 saver for its exposure. [HDR10 output details](docs/HDR10.md).
+The HDR10 branch reads the raw HDR decoder output through its dedicated RTX node, without SDR tonemapping. Changing `HDRPreviewKJ` exposure/saturation or enabling SDR effects does not alter the HDR10 file. Adjust `hdr_exposure` on the HDR10 saver for its exposure. [HDR10 output details](docs/HDR10.md).
 
 ## Saved stage controls
 
@@ -52,12 +53,12 @@ The file deliberately opens with draft/depth generation active and later stages 
 |---|---|---|
 | Input, draft, temporal depth, depth-conditioned generation | Enabled | Supply an image and prompt, then queue. |
 | `11 LTX 2x — NATIVE LATENT + EULER REFINEMENT` | Bypassed | Enable the group's nodes and queue to inspect the refined upscale. |
-| `13 HDR LAST — CONDITIONED ON FINISHED UPSCALE` and `15 HDR10 OUTPUT - RAW LOGC3 TO 10-BIT PQ / BT.2020` | Bypassed | Enable the HDR processing and HDR10 saver together to generate true HDR10. Install the bundled format first. |
+| `13 HDR LAST — CONDITIONED ON FINISHED UPSCALE` and `15 HDR10 OUTPUT - RAW LOGC3 TO 10-BIT PQ / BT.2020` | Bypassed | Enable HDR processing, HDR RTX VSR (194, in group 13), and HDR10 saver (191) together for 3840x2192 HDR10. Install the bundled format first. |
 | `14 SDR PREVIEW OUTPUT - TONEMAPPED HDR` | Bypassed | Enable the tonemapping and preview output nodes for the separate SDR display video. |
-| Film grain, DLSS, RTX VSR | Bypassed | Enable individually when desired. Their actual order is film grain → DLSS → RTX. |
+| SDR film grain, RTX VSR, DLSS | Bypassed | Enable SDR RTX VSR (186) for 3840x2192 output. Film grain and DLSS are optional; order is film grain → RTX → DLSS. |
 | Memory helpers | Bypassed | Optional; preserve the default unless needed for your setup. |
 
-To run the complete generation/upscale/HDR chain in one queue submission, enable the LTX upscale and HDR/output nodes before queueing. Optional finishing can remain bypassed. Enable all processing and output nodes needed by a stage; enabling only a saver will not activate bypassed upstream processing.
+To run the complete generation/upscale/HDR chain in one queue submission, enable the LTX upscale and HDR/output nodes before queueing. Enable each branch's RTX node for 3840x2192 output; film grain and DLSS can remain bypassed. Enabling only a saver will not activate bypassed upstream processing.
 
 ## Defaults in this workflow
 
@@ -67,20 +68,21 @@ To run the complete generation/upscale/HDR chain in one queue submission, enable
 | Seed | Fixed `3002545213` |
 | Resolution selector | 16:9, 1 megapixel target, dimensions rounded to multiples of 64 |
 | Draft → depth-conditioned video → LTX upscale | 672x384 → 1344x768 → 2688x1536 |
+| HDR10 / SDR delivery with each RTX node enabled | 3840x2192 (4K width; not standard 3840x2160 UHD) |
 | Draft sampling | Euler, CFG 1, 8-step distilled schedule |
 | Depth-conditioned sampling | Euler, CFG 1, **beta scheduler, 10 steps, denoise 0.8** |
 | Depth guide | Strength 0.8, frame index 1, Union Control LoRA strength 1.0 |
 | LTX refinement | Euler, CFG 1, sigmas `0.725, 0.421875, 0.0` |
 | HDR | Euler ancestral, CFG 1, full 8-step schedule, HDR LoRA strength 1.0 |
 | Upscale/HDR VAE decoding | Spatial tile 768, overlap 128; temporal size 128, overlap 16 |
-| HDR preview | LogC3 input, exposure -0.29, saturation 0.86 |
-| Optional DLSS | Natural, intensity 0.95, temporal sequence, motion guidance enabled |
-| Optional RTX VSR | Additional 1.25x upscale, MEDIUM quality |
+| HDR preview | LogC3 input, exposure 0.3, saturation 0.65 |
+| Optional DLSS | Natural, intensity 0.95, tone 0.25, structure 0.15, temporal sequence, motion guidance enabled |
+| HDR and SDR RTX VSR | Separate nodes, each targeting 3840x2192, LOW quality |
 | Upscale/SDR preview encoding | NVENC AV1 MP4, yuv420p, 40 Mbps, original depth-pass audio |
 | HDR10 video encoding | HEVC Main10 MP4, yuv420p10le, PQ/BT.2020, CRF 18, original depth-pass audio |
 | HDR10 luminance target | Reference white 203 nits, ceiling 1000 nits, HDR exposure 0 stops |
 
-The depth-conditioned pass uses the saved 10-step beta schedule; the 8-step schedule belongs to the draft and HDR passes. Sampling and bypass settings have not been changed for this release.
+The depth-conditioned pass uses the saved 10-step beta schedule; the 8-step schedule belongs to the draft and HDR passes. Sampling and bypass settings are preserved from the maintainer's latest revision.
 
 ## Outputs and limitations
 
@@ -97,4 +99,4 @@ The depth-conditioned pass uses the saved 10-step beta schedule; the 8-step sche
 
 This repository contains the workflow, HDR10 encoder preset, and documentation. Download model weights from their original sources; model weights, input images, generated videos, and third-party runtime binaries are not bundled.
 
-The original generation settings and bypass states are preserved. The HDR10 update adds one saver, one instruction note, and three connections from the existing HDR decoder, audio, and FPS outputs. The current workflow has 87 nodes and 145 links. See [the dependency and publication audit](docs/PUBLICATION_NOTES.md).
+The latest maintainer revision adds a dedicated RTX upscale before HDR10 conversion and changes the SDR finishing order to film grain → RTX → DLSS. Its processing settings, layout, and bypass states are preserved. The current workflow has 87 nodes and 145 links. See [the dependency and publication audit](docs/PUBLICATION_NOTES.md).

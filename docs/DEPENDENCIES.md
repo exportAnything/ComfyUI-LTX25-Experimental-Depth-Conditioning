@@ -14,17 +14,17 @@ Install the packages below using your ComfyUI node manager or each project's own
 | [ComfyUI-VideoHelperSuite](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite) | 1.7.9 | `VHS_VideoCombine`; stock AV1 preview format and the bundled HDR10 format |
 | [comfy-mtb](https://github.com/melMass/comfy_mtb) | 0.5.4 | `Image Resize Factor (mtb)` |
 
-## Optional finishing and memory helpers
+## 4K output, optional finishing, and memory helpers
 
 | Package | Audited version / revision | Nodes used |
 |---|---|---|
 | [ComfyUI-DLSS5-NR-Temporal](https://github.com/exportAnything/ComfyUI-DLSS5-NR-Temporal) | [`81171d1`](https://github.com/exportAnything/ComfyUI-DLSS5-NR-Temporal/commit/81171d18bc2a359d75cace2eadf13efc757d9b2d) | `DLSS5NeuralRendering` |
-| [NVIDIA RTX Nodes for ComfyUI](https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI) | 0.1.3 | `RTXVideoSuperResolution` |
+| [NVIDIA RTX Nodes for ComfyUI](https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI) | 0.1.3 | `RTXVideoSuperResolution`; separate HDR (194) and SDR (186) upscalers to 3840x2192 |
 | [RES4LYF](https://github.com/ClownsharkBatwing/RES4LYF) | [`e716cd1`](https://github.com/ClownsharkBatwing/RES4LYF/commit/e716cd1cb2c5cff90131bf4914b75b75a0489d48) | `Film Grain` |
 | [ComfyUI-Easy-Use](https://github.com/yolain/ComfyUI-Easy-Use) | 1.3.6 | `easy cleanGpuUsed` |
 | [ComfyUI-MemoryCleaner](https://github.com/eddyhhlure1Eddy/ComfyUI-MemoryCleaner) | [`6ff10c1`](https://github.com/eddyhhlure1Eddy/ComfyUI-MemoryCleaner/commit/6ff10c1ec7aa25cce2e10311f004df60426cb1a7) | `MemoryCleaner` |
 
-These nodes are bypassed in the saved file. Optional film grain, DLSS, and RTX VSR run after HDR tonemapping in that order.
+These nodes are bypassed in the saved file. Enable each branch's RTX node for 3840x2192 output. The SDR branch runs film grain → RTX VSR → DLSS after HDR tonemapping. The separate HDR RTX node processes raw LogC3 before HDR10 conversion.
 
 ### Use the temporal DLSS fork
 
@@ -40,7 +40,7 @@ The SDR output nodes select VideoHelperSuite's stock NVENC AV1 MP4 format. Use a
 
 **HDR10 additionally requires the bundled format file.** Copy [ltx-logc3-hdr10-1000nit-hevc-mp4.json](../video_formats/ltx-logc3-hdr10-1000nit-hevc-mp4.json) into `ComfyUI/custom_nodes/comfyui-videohelpersuite/video_formats/` and refresh/restart ComfyUI. FFmpeg must support `libx265` and `zscale`. The workflow JSON alone does not install this preset. See [HDR10 setup](HDR10.md).
 
-Optional RTX VSR uses the NVIDIA VFX dependency described by [NVIDIA RTX Nodes](https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI). It is separate from the learned LTX latent 2x stage.
+RTX VSR uses the NVIDIA VFX dependency described by [NVIDIA RTX Nodes](https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI). It supplies the final 3840x2192 upscale on both output branches, separately from the earlier learned LTX latent 2x stage. Bypassing it leaves the default output at 2688x1536.
 
 ## Not required
 
